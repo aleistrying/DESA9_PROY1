@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" id="body">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokeapi con cache</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/utils.js" defer></script>
+    <script src="js/index.js" defer></script>
+</head>
+
+<body>
+    <main class="main-container">
+        <section class="section-card-container">
+            <div class="flat-card-container icon-card-margin">
+                <img src="./assets/img/pokeapi_logo.png" class="pokeapi-logo">
+                <h1 class="pokeapi-title mt" id="pokeInfo">Poke-Información</h1>
+                <!-- <p class="w100 mt pokeapi-description">Busca desde pokemones hasta las habilidades de los mismos.</p> -->
+                <form class="form-container" id="pokeapi-form">
+                    <div class="w100 mt checkbox-container">
+                        <!-- add a checkbox  -->
+                        <div class="mx1">
+                            <input type="checkbox" name="sprites" id="spritesCb" checked>
+                            <label for="sprites">Sprites</label>
+                        </div>
+
+                        <div class="mx1">
+                            <input type="checkbox" name="location" id="locationCb" checked>
+                            <label for="ubicacion">Ubicación</label>
+                        </div>
+
+                        <div class="mx1">
+                            <input type="checkbox" name="chain" id="chainCb" checked>
+                            <label for="chain">Cadena de Evolución</label>
+                        </div>
+                    </div>
+                    <div class="w100 mt flex-between-end">
+                        <div class="w68 flex-col">
+                            <label class="form-label" for="search">Nombre:</label>
+                            <input class="w100 pokeapi-input" type="text" name="search" id="pokeapi-input-search"
+                                value="">
+                        </div>
+                        <button class="pokeapi-btn w28" type="submit">Buscar</button>
+                    </div>
+
+                </form>
+            </div>
+        </section>
+        <section class="section-card-container mt" id="pokeapi-output">
+            <!-- <div class="flat-card-container">
+
+        </div> -->
+        </section>
+    </main>
+</body>
+
+</html>

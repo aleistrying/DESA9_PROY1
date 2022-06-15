@@ -2,6 +2,10 @@
 const config = require('./config');
 const express = require('express');
 const app = express();
+const { renderCSSTriangles, requiredCSSRules } = require('dae2css')
+const fs = require("fs")
+const cors = require('cors');
+
 
 const { port = 3000 } = config;
 
@@ -13,6 +17,7 @@ const cacheRoutes = require('./routes/cacheRoutes');
 const cacheMiddleware = require('./middleware/cacheInternalMiddleware');
 
 
+app.use(cors());
 //handle add and cache responses.
 //handle auto remove cache
 app.use(cacheMiddleware);

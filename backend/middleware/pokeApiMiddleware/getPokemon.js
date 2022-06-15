@@ -2,7 +2,7 @@
 const axios = require('axios');
 const config = require('../../config');
 const pokemonChainToArray = require('../../utils/pokemonChainToArray');
-const { pokeApiURL } = config;
+const { pokeApiURL, defaultTTL } = config;
 /**
  * Middleware that gets a pokemon from the pokeapi
  */
@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
     //add itself to the cache if it doesn't have any object
     // req.cache.getPokemon = req.cache?.getPokemon || {};
 
-    console.log("calling getpokemon")
+    console.log("calling getpokemon ", req.params)
     try {
         const { pokeQuery } = req.params;
         if (!pokeQuery)
@@ -26,12 +26,22 @@ module.exports = async (req, res) => {
 
         const pokemon = pokemonRequest?.data;
 
+        //add location encounters
+        const locationEncountersUrl = pokemon?.location_area_encounters
+
+        if (locationEncountersUrl) {
+            const locationEncountersRequest = await axios.get(locationEncountersUrl)
+            const locationEncounters = locationEncountersRequest?.data;
+            pokemon.locations = locationEncounters;
+        }
+
         //get species for chain
         const speciesUrl = pokemon?.species.url
         if (!speciesUrl)
             return cacheAndSendDefaultResponse(req, res, pokemon)
         //species request
         const speciesResponse = await axios.get(speciesUrl);
+
 
         //evolution chain
         const evolutionChainUrl = speciesResponse?.data?.evolution_chain?.url
@@ -54,12 +64,12 @@ module.exports = async (req, res) => {
         };
         //save into cache
         req.saveCache("getPokemon", pokemon.id,
-            1000 * 60 * 0.5, completePokemonResponse);
+            defaultTTL, completePokemonResponse);
         req.saveCache("getPokemon", pokemon.name.toLowerCase(),
-            1000 * 60 * 0.5, completePokemonResponse);
+            defaultTTL, completePokemonResponse);
 
-        // req.cache.getPokemon[pokemon.id] = { data: pokemon, ttl: Date.now() + 1000 * 60 * 0.5 };
-        // req.cache.getPokemon[pokemon.name.toLowerCase()] = { data: pokemon, ttl: Date.now() + 1000 * 60 * 0.5 };
+        // req.cache.getPokemon[pokemon.id] = { data: pokemon, ttl: Date.now() + defaultTTL };
+        // req.cache.getPokemon[pokemon.name.toLowerCase()] = { data: pokemon, ttl: Date.now() + defaultTTL };
 
         //return data found
         res.json({
@@ -73,12 +83,12 @@ module.exports = async (req, res) => {
 }
 
 function cacheAndSendDefaultResponse(req, res, pokemon) {
-    // cache.getPokemon[pokemon.id] = { data: pokemon, ttl: Date.now() + 1000 * 60 * 0.5 };
-    // cache.getPokemon[pokemon.name.toLowerCase()] = { data: pokemon, ttl: Date.now() + 1000 * 60 * 0.5 };
+    // cache.getPokemon[pokemon.id] = { data: pokemon, ttl: Date.now() + defaultTTL };
+    // cache.getPokemon[pokemon.name.toLowerCase()] = { data: pokemon, ttl: Date.now() + defaultTTL };
     req.saveCache("getPokemon", pokemon.id,
-        1000 * 60 * 0.5, pokemon);
+        defaultTTL, pokemon);
     req.saveCache("getPokemon", pokemon.name.toLowerCase(),
-        1000 * 60 * 0.5, pokemon);
+        defaultTTL, pokemon);
 
     res.json({ isCached: false, ...pokemon })
 }
@@ -88,9 +98,9 @@ function sendCachedResponse(req, res, pokeQuery) {
 
     //refresh the time to live
     req.saveCache("getPokemon", pokemon.id,
-        1000 * 60 * 0.5, pokemon);
+        defaultTTL, pokemon);
     req.saveCache("getPokemon", pokemon.name.toLowerCase(),
-        1000 * 60 * 0.5, pokemon);
+        defaultTTL, pokemon);
 
-    return res.json({ isCached: true, ...pokemon });
+    return res.json({ isCached: true, ttl: defaultTTL, ...pokemon });
 }
