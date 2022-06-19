@@ -59,24 +59,17 @@ const Utils = document.Utils;
 
                 try {
                     //multirequest depending on searchType
-                    response = await Utils.fetchPokemon({ nameOrId: query.toLowerCase() })
+                    const response = await Utils.fetchPokemon({ nameOrId: query.toLowerCase() })
                     if (response?.error)
                         throw new Error(response.error)
-                    if (response?.isCached) {
-                        App.cache.timer = response.ttl / 1000
-                        App.htmlElements.pokeInfoTitle.innerHTML = `Poke-Información ${Utils.formatTTLToSeconds(App.cache.timer)} (cached)`;
-                        clearInterval(App.cache.interval);
-                        App.cache.interval = setInterval(() => {
 
-                            if (App.cache.timer === 0) {
-                                clearInterval(App.cache.interval);
-                                App.htmlElements.pokeInfoTitle.innerHTML = `Poke-Información (server will clear cache)`;
-                                return;
-                            }
-                            App.cache.timer--;
-                            App.htmlElements.pokeInfoTitle.innerHTML = `Poke-Información ${Utils.formatTTLToSeconds(App.cache.timer)} (cached)`;
-                        }, 1000)
-                    }
+                    if (response?.isCached)
+                        App.methods.manageCache(response)
+
+                    if (response?.types)
+                        response.cardStyles = Utils.getCardStylesFromTypes(response.types);
+
+
                     App.cache.response = response
 
                     //transform the chain object into a readable array:
@@ -91,6 +84,28 @@ const Utils = document.Utils;
             },
 
         },
+        methods: {
+            manageCache: (response) => {
+                try {
+                    App.cache.timer = response.ttl / 1000
+                    App.htmlElements.pokeInfoTitle.innerHTML = `Poke-Información ${Utils.formatTTLToSeconds(App.cache.timer)} (cached)`;
+                    clearInterval(App.cache.interval);
+                    App.cache.interval = setInterval(() => {
+                        if (App.cache.timer === 0) {
+                            clearInterval(App.cache.interval);
+                            App.htmlElements.pokeInfoTitle.innerHTML = `Poke-Información (server will clear cache)`;
+                            return;
+                        }
+                        App.cache.timer--;
+                        App.htmlElements.pokeInfoTitle.innerHTML = `Poke-Información ${Utils.formatTTLToSeconds(App.cache.timer)} (cached)`;
+                    }, 1000)
+
+                } catch (e) {
+                    console.log(e);
+                    throw new Error(e)
+                }
+            },
+        },
         templates: {
             render: ({ response }) => {
                 const renderMap = {
@@ -99,20 +114,8 @@ const Utils = document.Utils;
                 return renderMap["pokemon"](response);
             },
             errorCard: () => `<h1>There was an error</h1>`,
-            pokemonCard: ({ id, name, types, weight, height, sprites, abilities, chain, locations }) => {
-                return `<div class="flat-card-container">
-                ${(() => {
-                        const pokeTypes = types.map(t => t.type.name)
-                        if (pokeTypes.length === 1)
-                            pokeTypes.push("default")
-
-                        console.log(sprites)
-                        //linear gradient
-                        const radial = `radial-gradient(circle, ${pokeTypes.reverse().map((t, i) => `var(--${t}) ${Math.round(((i) / pokeTypes.length)) * 100}%`).join(", ")})`
-                        console.log(radial)
-                        App.htmlElements.body.style.background = radial
-                        return ""
-                    })()}
+            pokemonCard: ({ id, name, types, weight, height, sprites, abilities, chain, locations, cardStyles }) => {
+                return `<div class="flat-card-container" style="${cardStyles}">
                             ${App.templates.nameCard({ name, id })}
                             <div class="pokemon-general card-section">
                             <h3 class="pokeapi-title w100">Generales de Pokemones</h3>
@@ -153,27 +156,27 @@ const Utils = document.Utils;
             //         ${pokemon.map((p) => `<li><div class="li-item-container">${Utils.capitalize(p.pokemon.name)} ${p?.is_hidden ? App.templates.iconHidden() : ""}</div></li>`).join("")}
             //     </ul>`,
             nameCard: ({ name, id }) =>
-                `<div class="w100 ">
-                    <h2 class="pokeapi-pokemon-name-title">${Utils.capitalize(name)} (${id})</h2>
+                `<div class="w100 flex-center mb2">
+                    <h2 class="pokeapi-pokemon-name-title">${Utils.capitalize(name)} </h2>
+                    <h2 class="pokeapi-pokemon-id-title">${id}</h2>
                 </div > `,
             sprites: ({ sprites }) =>
-                `<h3 class="pokeapi-pokemon-title">Sprites</h3>
+                `<!--<h3 class="pokeapi-pokemon-title">Sprites</h3>-->
                     <div class="pokeapi-sprites">
-
-                    ${Object.entries(Object.entries(sprites)
+                    ${Utils.flatSpriteObject(sprites)
                     // .filter(([name, link]) => link !== null && ['front_default', 'back_default'].includes(name))
-                    .filter(([name, worlds]) => name !== null && name === "other")
-                    .map(([name, worlds]) => worlds)[0]?.home ?? {})
-                    .filter(([name, link]) => name.includes("default"))
-                    .sort((a, b) => a[0].includes("shiny") ? 1 : -1)
-                    .map(([name, link]) => `<div class="pokeapi-sprite-container">
-                                        <div class="pokeapi-sprite-img-container"><img class="pokeapi-sprite-img" src="${link}" alt="${name}" /></div>
-                                        <!--<p class="pokeapi-sprite-name">${name.replace(/\_/gi, " ")}</p>-->
+                    // .filter(([name, worlds]) => name !== null && name === "other")
+                    // .map(([name, worlds]) => worlds)[0]?.home ?? {})
+                    // .filter(([name, link]) => name.includes("default"))
+                    // .sort((a, b) => a[0].includes("shiny") ? 1 : -1)
+                    .map((link) => `<div class="pokeapi-sprite-container">
+                                        <div class="pokeapi-sprite-img-container"><img class="pokeapi-sprite-img" src="${link}" alt="" /></div>
+                                        <!--<p class="pokeapi-sprite-name"></p>-->
                                     </div>`)
                     .join("")}
                 </div>`,
             location: ({ locations }) =>
-                `<h3 class="pokeapi-pokemon-title">Ubicación</h3>
+                `<!--<h3 class="pokeapi-pokemon-title">Ubicación</h3>-->
                     <div class="pokeapi-location">
                         ${!locations?.length ? "No ubicaciones" :
                     `<ul>
@@ -200,7 +203,7 @@ const Utils = document.Utils;
                         </ul>`  }
                     </div>`,
             evolutionChain: ({ chain }) =>
-                `<h3 class="pokeapi-pokemon-title">Evolution Chain</h3>
+                `<!--<h3 class="pokeapi-pokemon-title">Evolution Chain</h3>-->
                         ${!chain?.length ? "No evolution chain" :
                     `<ul>
                             ${chain.map(evolution =>

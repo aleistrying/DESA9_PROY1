@@ -4,7 +4,7 @@ module.exports = function pokemonChainToArray({ initialPokemon }) {
     if (!initialPokemon.evolves_to?.length)
         return {
             name: initialPokemon.species.name,
-            isBaby: initialPokemon.is_baby
+            isBaby: initialPokemon.is_baby,
         };
 
     return [{
